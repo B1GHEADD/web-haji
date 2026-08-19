@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --color-primary: #008854; /* Sesuai warna hijau haji di mockup */
+  --color-primary-dark: #006b42;
+  --color-secondary: #f29a2e; /* Sesuai warna oranye di mockup */
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  margin: 0;
+}
