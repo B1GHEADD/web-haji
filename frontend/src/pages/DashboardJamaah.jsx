@@ -32,20 +32,20 @@ const DOC_LABELS = {
 };
 
 // ─── Sub-komponen ──────────────────────────────────────────────────────────────
-const SectionCard = ({ title, icon: Icon, iconColor = 'text-emerald-600', iconBg = 'bg-emerald-50', children }) => (
-  <div className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-gray-100">
+const SectionCard = ({ title, icon: Icon, iconColor = 'text-emerald-600', iconBg = 'bg-emerald-50', columns = true, children }) => (
+  <div className="bg-white rounded-3xl p-5 shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-gray-100 lg:p-7 lg:rounded-[28px]">
     <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-50">
       <div className={`w-9 h-9 ${iconBg} ${iconColor} rounded-xl flex items-center justify-center`}>
         <Icon size={18} strokeWidth={2.5} />
       </div>
       <h2 className="text-sm font-bold text-gray-800 tracking-wide">{title}</h2>
     </div>
-    {children}
+    <div className={columns ? 'lg:grid lg:grid-cols-2 lg:gap-x-10' : ''}>{children}</div>
   </div>
 );
 
 const InfoRow = ({ label, value, highlight = false }) => (
-  <div className="flex flex-col gap-0.5 py-2.5 border-b border-gray-50 last:border-0">
+  <div className="flex flex-col gap-0.5 py-2.5 border-b border-gray-50 last:border-0 lg:py-3.5">
     <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">{label}</span>
     <span className={`text-sm font-semibold ${highlight ? 'text-emerald-700' : 'text-gray-800'} ${!value ? 'text-gray-300 italic' : ''}`}>
       {value || 'Belum diisi'}
@@ -129,10 +129,10 @@ const DashboardJamaah = () => {
   ];
 
   return (
-    <div className="max-w-md mx-auto pb-28">
+    <div className="max-w-md mx-auto pb-28 lg:max-w-6xl lg:pb-12">
 
       {/* ── Header Profil ── */}
-      <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 px-5 pt-8 pb-20 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 px-5 pt-8 pb-20 overflow-hidden lg:mx-8 lg:rounded-[32px] lg:px-10 lg:pt-10 lg:pb-24">
         {/* Dekorasi */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-10 -mb-10" />
@@ -167,7 +167,7 @@ const DashboardJamaah = () => {
       </div>
 
       {/* ── Stats Bar ── */}
-      <div className="mx-4 -mt-10 relative z-10">
+      <div className="mx-4 -mt-10 relative z-10 lg:mx-14 lg:-mt-12">
         <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 grid grid-cols-3 divide-x divide-gray-100">
           <div className="p-4 text-center">
             <p className="text-lg font-bold text-emerald-700">{p.no_porsi || '—'}</p>
@@ -185,15 +185,16 @@ const DashboardJamaah = () => {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="px-4 mt-6">
-        <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 gap-1">
+      <div className="px-4 mt-6 lg:px-8 lg:mt-8 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <aside className="lg:sticky lg:top-28">
+        <div className="flex bg-gray-50 p-1 rounded-2xl border border-gray-100 gap-1 lg:flex-col lg:p-2 lg:rounded-3xl">
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex flex-col items-center py-2 px-1 rounded-xl text-[9px] font-bold tracking-widest uppercase transition-all gap-1 ${
+                className={`flex-1 flex flex-col items-center py-2 px-1 rounded-xl text-[9px] font-bold tracking-widest uppercase transition-all gap-1 lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:px-4 lg:py-3 lg:text-[10px] ${
                   isActive ? 'bg-white text-emerald-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
@@ -203,10 +204,10 @@ const DashboardJamaah = () => {
             );
           })}
         </div>
-      </div>
+        </aside>
 
       {/* ── Konten Tab ── */}
-      <div className="px-4 mt-4 flex flex-col gap-4">
+      <div className="mt-4 flex flex-col gap-4 lg:mt-0 lg:gap-5">
 
         {/* TAB: Identitas */}
         {activeTab === 'profil' && (
@@ -298,7 +299,7 @@ const DashboardJamaah = () => {
 
         {/* TAB: Dokumen */}
         {activeTab === 'dokumen' && (
-          <SectionCard title="Kelengkapan Dokumen" icon={FileText} iconColor="text-blue-600" iconBg="bg-blue-50">
+          <SectionCard title="Kelengkapan Dokumen" icon={FileText} iconColor="text-blue-600" iconBg="bg-blue-50" columns={false}>
             {/* Progress bar */}
             <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
@@ -350,6 +351,7 @@ const DashboardJamaah = () => {
             </SectionCard>
           </>
         )}
+      </div>
       </div>
     </div>
   );

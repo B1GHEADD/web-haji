@@ -14,6 +14,7 @@ const Login = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpInfo, setOtpInfo] = useState(null); // { phoneHint, debugOtp, waPending, waError }
 
   // Petugas State
   const [username, setUsername] = useState('');
@@ -28,13 +29,8 @@ const Login = () => {
     try {
       const res = await api.post('/api/auth/login-otp', { nik });
       if (res.data.status === 'success') {
-        const { wa_sent, phone_hint, debug_otp, wa_error } = res.data;
-        if (wa_sent) {
-          alert(`✅ Kode OTP telah dikirim ke WhatsApp nomor: ${phone_hint}\n\nSilakan cek WhatsApp Anda.`);
-        } else {
-          // WA gagal — tampilkan debug OTP agar user tetap bisa login saat testing
-          alert(`⚠️ Pesan WhatsApp gagal terkirim ke ${phone_hint}.\n\nKeterangan: ${wa_error || 'Sender belum aktif'}\n\n[MODE TESTING] Kode OTP Anda: ${debug_otp}`);
-        }
+        const { wa_sent, wa_pending, phone_hint, debug_otp, wa_error } = res.data;
+        setOtpInfo({ phoneHint: phone_hint, debugOtp: debug_otp, waPending: wa_pending, waSent: wa_sent, waError: wa_error });
         setOtpSent(true);
       }
     } catch (err) {
@@ -127,24 +123,69 @@ const Login = () => {
                 </div>
               </div>
 
-              {otpSent && (
-                <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <label className="text-[11px] font-bold text-gray-700 tracking-wider uppercase ml-1">Kode OTP WhatsApp</label>
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <MessageSquare size={16} className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+              {otpSent && otpInfo && (
+                <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+
+                  {/* Banner status WA */}
+                  {otpInfo.waSent && !otpInfo.waPending && (
+                    <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3">
+                      <span className="text-lg">✅</span>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-700">OTP Terkirim via WhatsApp</p>
+                        <p className="text-[11px] text-emerald-600 mt-0.5">Dikirim ke nomor: <span className="font-bold">{otpInfo.phoneHint}</span></p>
+                      </div>
                     </div>
-                    <input 
-                      type="text" 
-                      required
-                      className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-emerald-50 focus:border-emerald-200 transition-all outline-none font-bold text-gray-800 tracking-[0.5em] text-center"
-                      placeholder="• • • • • •"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').substring(0, 6))}
-                      maxLength={6}
-                    />
+                  )}
+
+                  {otpInfo.waPending && (
+                    <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+                      <span className="text-lg">⏳</span>
+                      <div>
+                        <p className="text-xs font-bold text-amber-700">Pesan WhatsApp dalam antrian</p>
+                        <p className="text-[11px] text-amber-600 mt-0.5">Nomor: <span className="font-bold">{otpInfo.phoneHint}</span> — mungkin butuh beberapa detik.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!otpInfo.waSent && (
+                    <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+                      <span className="text-lg">❌</span>
+                      <div>
+                        <p className="text-xs font-bold text-red-700">WhatsApp gagal dikirim</p>
+                        <p className="text-[11px] text-red-600 mt-0.5">{otpInfo.waError || 'Sender tidak aktif'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Debug OTP — selalu tampil di dev mode */}
+                  {otpInfo.debugOtp && (
+                    <div className="bg-gray-900 border border-gray-700 rounded-2xl px-4 py-3">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">🔧 Mode Testing — Kode OTP Anda</p>
+                      <p className="text-2xl font-black text-white tracking-[0.35em] text-center py-1">{otpInfo.debugOtp}</p>
+                      <p className="text-[10px] text-gray-500 text-center mt-1">Salin kode ini ke kolom OTP di bawah · Berlaku 3 menit</p>
+                    </div>
+                  )}
+
+                  {/* Input OTP */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 tracking-wider uppercase ml-1">Kode OTP WhatsApp</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                        <MessageSquare size={16} className="text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                      </div>
+                      <input 
+                        type="text" 
+                        required
+                        autoFocus
+                        className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-emerald-50 focus:border-emerald-200 transition-all outline-none font-bold text-gray-800 tracking-[0.5em] text-center"
+                        placeholder="• • • • • •"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, '').substring(0, 6))}
+                        maxLength={6}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-500 text-center mt-1">Masukkan kode OTP yang dikirim ke nomor WhatsApp terdaftar.</p>
                   </div>
-                  <p className="text-[10px] text-gray-500 text-center mt-1">Kode OTP telah dikirim ke nomor WhatsApp yang terdaftar pada NIK ini.</p>
                 </div>
               )}
 
@@ -159,7 +200,7 @@ const Login = () => {
               {otpSent && (
                 <button 
                   type="button" 
-                  onClick={() => setOtpSent(false)}
+                  onClick={() => { setOtpSent(false); setOtpInfo(null); setOtp(''); }}
                   className="text-xs font-bold text-emerald-600 hover:text-emerald-700 mt-2"
                 >
                   Ubah NIK

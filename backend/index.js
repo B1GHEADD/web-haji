@@ -202,19 +202,39 @@ app.post('/api/auth/login-otp', async (req, res) => {
     }
 
     // 2. Buat OTP 5 digit & simpan ke store (expired 3 menit)
-    const otp    = createOTP(user.user_id);
+    console.log('[DEBUG login-otp] user object keys:', Object.keys(user));
+    console.log('[DEBUG login-otp] user.user_id:', user.user_id);
+    console.log('[DEBUG login-otp] user.id:', user.id);
+    const otpKey = user.user_id || user.id;
+    console.log('[DEBUG login-otp] key yg dipakai untuk simpan OTP:', otpKey);
+    const otp    = createOTP(otpKey);
     const target = normalizePhone(user.phone_number);
 
     // 3. Kirim OTP via Fonnte
     const message = `Berikut ini kode OTP anda ${otp}\n\nKode ini berlaku selama 3 menit dan hanya untuk sekali pakai.\nJangan berikan kode ini kepada siapapun.`;
 
-    let waSent  = false;
-    let waError = '';
+    let waSent   = false;
+    let waPending = false;
+    let waError  = '';
+    let waProcess = '';
 
     try {
       const fonnteRes = await sendWhatsApp(target, message);
-      waSent = fonnteRes.status === true || fonnteRes.status === 'true';
-      console.log(`[OTP] ✅ Terkirim ke ${target} | Response:`, fonnteRes);
+      const fonnteStatus = fonnteRes.status === true || fonnteRes.status === 'true';
+      waProcess = fonnteRes.process || '';
+
+      // Fonnte mengembalikan status:true tapi process:'pending' = masuk antrian, belum tentu terkirim
+      if (fonnteStatus && waProcess === 'pending') {
+        waPending = true;
+        waSent    = true; // diterima Fonnte, tapi masih pending
+        console.log(`[OTP] ⏳ Masuk antrian Fonnte ke ${target} | Process: pending | ID:`, fonnteRes.id);
+      } else if (fonnteStatus) {
+        waSent = true;
+        console.log(`[OTP] ✅ Terkirim ke ${target} | Response:`, fonnteRes);
+      } else {
+        waError = fonnteRes.reason || 'Gagal dikirim oleh Fonnte';
+        console.error(`[OTP] ❌ Ditolak Fonnte ke ${target} | Reason:`, fonnteRes.reason);
+      }
     } catch (waErr) {
       waError = waErr.message;
       console.error('[OTP] ❌ Gagal kirim via Fonnte:', waErr.message);
@@ -224,14 +244,19 @@ app.post('/api/auth/login-otp', async (req, res) => {
     const rawPhone = user.phone_number.replace(/\s/g, '');
     const phoneHint = rawPhone.slice(0, 4) + '****' + rawPhone.slice(-3);
 
+    const isDev = process.env.NODE_ENV !== 'production';
+
     res.json({
       status:     'success',
-      message:    waSent ? 'OTP berhasil dikirim via WhatsApp.' : 'OTP diproses (pengiriman WA gagal).',
+      message:    waSent
+        ? (waPending ? 'OTP masuk antrian WhatsApp, tunggu sebentar.' : 'OTP berhasil dikirim via WhatsApp.')
+        : 'OTP diproses (pengiriman WA gagal).',
       phone_hint: phoneHint,
       wa_sent:    waSent,
+      wa_pending: waPending,
       wa_error:   waError || null,
-      // Hanya tampil OTP di development untuk memudahkan testing
-      debug_otp:  process.env.NODE_ENV !== 'production' ? otp : undefined,
+      // Selalu tampilkan OTP di mode development agar testing mudah
+      debug_otp:  isDev ? otp : undefined,
     });
 
   } catch (err) {
@@ -304,7 +329,12 @@ app.post('/api/auth/verify-otp', async (req, res) => {
     }
 
     // 2. Verifikasi OTP
+    console.log('[DEBUG verify-otp] user.id:', user.id);
+    console.log('[DEBUG verify-otp] user.user_id:', user.user_id);
+    console.log('[DEBUG verify-otp] OTP store size:', otpStore.size);
+    console.log('[DEBUG verify-otp] OTP store keys:', [...otpStore.keys()]);
     const check = verifyOTP(user.id, otp);
+    console.log('[DEBUG verify-otp] check result:', check);
     if (!check.valid) {
       return res.status(401).json({ status: 'error', message: check.reason });
     }

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import BottomNav from './BottomNav';
 import MobileDrawer from './MobileDrawer';
 import { DrawerContext } from '../context/DrawerContext';
-import { ChevronDown, BookOpen, Video, Calendar, BookText, Share2, PhoneCall, UserPlus, FileCheck, FileText } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { ChevronDown, BookOpen, Video, Calendar, BookText, Share2, PhoneCall, UserPlus, FileCheck, FileText, LogOut, User } from 'lucide-react';
 
 const Layout = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   const menus = [
     { name: 'Profil KBIHU', icon: BookOpen, color: 'text-blue-500', link: '/profil' },
@@ -26,7 +28,7 @@ const Layout = ({ children }) => {
     <DrawerContext.Provider value={{ openDrawer: () => setDrawerOpen(true), closeDrawer: () => setDrawerOpen(false) }}>
       <div className="min-h-screen bg-[#fafafa] flex flex-col font-sans">
         
-        {/* Top Navbar for Desktop */}
+        {/* Top Navbar for Desktop — selalu tampil */}
         <div className="hidden md:flex bg-white/80 backdrop-blur-lg border-b border-gray-100 py-4 px-10 items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
@@ -70,7 +72,24 @@ const Layout = ({ children }) => {
               </div>
             </div>
 
-            <a href="/login" className="text-emerald-600 hover:text-white border border-emerald-500 hover:bg-emerald-500 px-5 py-2 rounded-full font-semibold transition-all">Login</a>
+            {/* Tombol Login / Info User */}
+            {!user ? (
+              <a href="/login" className="text-emerald-600 hover:text-white border border-emerald-500 hover:bg-emerald-500 px-5 py-2 rounded-full font-semibold transition-all">Login</a>
+            ) : (
+              <div className="flex items-center gap-3">
+                <a href="/dashboard" className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full font-semibold text-sm transition-all">
+                  <User size={14} />
+                  <span>{user.nama || user.name || 'Dashboard'}</span>
+                </a>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 border border-gray-200 hover:border-red-300 px-4 py-2 rounded-full font-semibold text-sm transition-all"
+                >
+                  <LogOut size={14} />
+                  Keluar
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -82,7 +101,7 @@ const Layout = ({ children }) => {
           {children}
         </main>
         
-        {/* Bottom Nav */}
+        {/* Bottom Nav — selalu tampil di mobile */}
         <div className="md:hidden">
           <BottomNav />
         </div>

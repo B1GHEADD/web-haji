@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Activity, FileCheck, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Activity, FileCheck, CheckCircle2, Upload, X } from 'lucide-react';
 
 const Daftar = () => {
   const [formData, setFormData] = useState({
@@ -129,8 +129,8 @@ const Daftar = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <FileUpload label="Scan/Foto KTP" id="ktp" />
-            <FileUpload label="Bukti Setoran Porsi" id="porsi" />
+            <FileUpload label="Scan/Foto KTP" id="ktp" accept="image/*,.pdf" />
+            <FileUpload label="Bukti Setoran Porsi" id="porsi" accept="image/*,.pdf" />
           </div>
         </div>
 
@@ -188,14 +188,81 @@ const ToggleRow = ({ label, name, checked, onChange }) => (
   </div>
 );
 
-const FileUpload = ({ label, id }) => (
-  <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50/50 transition-colors cursor-pointer group">
-    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-      <FileCheck size={20} strokeWidth={2} />
+const FileUpload = ({ label, id, accept = 'image/*,.pdf' }) => {
+  const [file, setFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef(null);
+
+  const handleFile = (f) => {
+    if (f) setFile(f);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    handleFile(f);
+  };
+
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    setFile(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  return (
+    <div
+      onClick={() => !file && inputRef.current?.click()}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all ${
+        file
+          ? 'border-emerald-300 bg-emerald-50/50 cursor-default'
+          : dragging
+          ? 'border-blue-400 bg-blue-50 cursor-copy scale-[1.02]'
+          : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50/50 cursor-pointer group'
+      }`}
+    >
+      {/* Hidden real file input */}
+      <input
+        ref={inputRef}
+        id={id}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files[0])}
+      />
+
+      {file ? (
+        /* State: file sudah dipilih */
+        <>
+          <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3">
+            <CheckCircle2 size={22} strokeWidth={2} />
+          </div>
+          <span className="text-sm font-bold text-emerald-700 mb-1 max-w-full truncate px-2">{file.name}</span>
+          <span className="text-[10px] text-emerald-500 font-medium">{(file.size / 1024).toFixed(0)} KB</span>
+          <button
+            type="button"
+            onClick={handleRemove}
+            className="mt-3 flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-600 transition-colors"
+          >
+            <X size={12} /> Hapus file
+          </button>
+        </>
+      ) : (
+        /* State: belum ada file */
+        <>
+          <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all">
+            <Upload size={20} strokeWidth={2} />
+          </div>
+          <span className="text-sm font-bold text-gray-800 mb-1">{label}</span>
+          <span className="text-[10px] font-medium text-gray-400">Klik atau seret file ke sini</span>
+          <span className="text-[9px] text-gray-300 mt-1">JPG, PNG, PDF maks. 5MB</span>
+        </>
+      )}
     </div>
-    <span className="text-sm font-bold text-gray-800 mb-1">{label}</span>
-    <span className="text-[10px] font-medium text-gray-400">Klik atau seret file ke sini</span>
-  </div>
-);
+  );
+};
 
 export default Daftar;
